@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superman File Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs/lib/anime.iife.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+    <style>
+        .superman-bg {
+            background: linear-gradient(135deg, #0066CC 0%, #DC143C 100%);
+        }
+        .superman-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 102, 204, 0.4), 0 10px 10px -5px rgba(220, 20, 60, 0.3);
+        }
+        .superman-text {
+            font-family: 'Bangers', cursive;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #FFD700;
+            transform: translateY(-5px);
+        }
+        .superman-btn {
+            background: linear-gradient(to right, #0066CC, #DC143C);
+            transition: all 0.3s ease;
+        }
+        .superman-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .shield-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="superman-bg min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-white/10 backdrop-blur-md rounded-xl p-8 superman-shadow" data-aos="zoom-in">
+        <div class="text-center mb-8">
+            <div class="shield-icon inline-block mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <h1 class="superman-text text-4xl md:text-5xl font-bold text-white mb-2">SUPER<span class="text-red-500">UPLOAD</span></h1>
+            <p class="text-white/80 text-lg">Faster than a speeding bullet! More powerful than a locomotive!</p>
+        </div>
+
+        <div class="upload-area rounded-xl p-8 text-center cursor-pointer mb-6" id="dropArea">
+            <div class="flex flex-col items-center justify-center space-y-4">
+                <i data-feather="upload-cloud" class="w-12 h-12 text-white"></i>
+                <h3 class="superman-text text-2xl text-white">Drop files here</h3>
+                <p class="text-white/70">or click to browse your files</p>
+                <input type="file" id="fileInput" class="hidden" multiple>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <button class="superman-btn text-white py-3 px-6 rounded-lg font-bold superman-text text-lg flex items-center justify-center gap-2">
+                <i data-feather="upload"></i> Upload Now
+            </button>
+            <button class="bg-white/10 text-white py-3 px-6 rounded-lg font-bold superman-text text-lg flex items-center justify-center gap-2 border border-white/20 hover:bg-white/20 transition">
+                <i data-feather="share-2"></i> Share
+            </button>
+        </div>
+
+        <div class="mt-8 hidden" id="progressSection">
+            <div class="flex justify-between text-white mb-2">
+                <span>Uploading...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="w-full bg-white/20 rounded-full h-2.5">
+                <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-red-500 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="mt-8 hidden" id="fileList">
+            <h3 class="superman-text text-xl text-white mb-4">Your Super Files</h3>
+            <div class="space-y-2" id="fileItems">
+                <!-- Files will be listed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        feather.replace();
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const fileList = document.getElementById('fileList');
+        const fileItems = document.getElementById('fileItems');
+
+        // Handle drag and drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('border-yellow-400');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('border-yellow-400');
+        }
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', handleFiles);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files } });
+        }
+
+        function handleFiles(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
+
+            // Show progress
+            progressSection.classList.remove('hidden');
+            
+            // Simulate upload progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    showFileList(files);
+                }
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = `${Math.floor(progress)}%`;
+            }, 200);
+
+            // Reset file input
+            fileInput.value = '';
+        }
+
+        function showFileList(files) {
+            fileList.classList.remove('hidden');
+            fileItems.innerHTML = '';
+
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'bg-white/10 rounded-lg p-3 flex items-center justify-between';
+                
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'flex items-center gap-3';
+                
+                const fileIcon = document.createElement('i');
+                fileIcon.setAttribute('data-feather', getFileIcon(file.type));
+                fileIcon.className = 'text-white w-5 h-5';
+                
+                const fileName = document.createElement('span');
+                fileName.className = 'text-white truncate max-w-xs';
+                fileName.textContent = file.name;
+                
+                fileInfo.appendChild(fileIcon);
+                fileInfo.appendChild(fileName);
+                
+                const fileSize = document.createElement('span');
+                fileSize.className = 'text-white/70 text-sm';
+                fileSize.textContent = formatFileSize(file.size);
+                
+                fileItem.appendChild(fileInfo);
+                fileItem.appendChild(fileSize);
+                fileItems.appendChild(fileItem);
+            });
+
+            feather.replace();
+        }
+
+        function getFileIcon(fileType) {
+            if (fileType.includes('image')) return 'image';
+            if (fileType.includes('audio')) return 'music';
+            if (fileType.includes('video')) return 'film';
+            if (fileType.includes('pdf')) return 'file-text';
+            if (fileType.includes('zip') || fileType.includes('compressed')) return 'archive';
+            return 'file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
