@@ -3,16 +3,13 @@ const path = require('path');
 const MarkdownIt = require('markdown-it');
 const puppeteer = require('puppeteer');
 
-async function convertMdToPdf(mdFilePath, pdfOutputPath) {
+async function convertMdToPdf(markdownContent) {
     try {
-        // 1. Read the Markdown file content
-        const markdownContent = fs.readFileSync(mdFilePath, 'utf-8');
-
-        // 2. Parse Markdown to HTML
+        // 1. Parse Markdown to HTML
         const md = new MarkdownIt();
         const htmlContent = md.render(markdownContent);
         
-        // 3. Add basic HTML structure and optional styling for better PDF output
+        // 2. Add basic HTML structure and optional styling for better PDF output
         const fullHtml = `
             <!DOCTYPE html>
             <html>
@@ -30,16 +27,15 @@ async function convertMdToPdf(mdFilePath, pdfOutputPath) {
             </html>
         `;
 
-        // 4. Launch a headless browser with Puppeteer
-        const browser = await puppeteer.launch();
+        // 3. Launch a headless browser with Puppeteer
+        const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
 
-        // 5. Set the page content to the generated HTML
+        // 4. Set the page content to the generated HTML
         await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
 
-        // 6. Generate the PDF
-        await page.pdf({
-            path: pdfOutputPath,
+        // 5. Generate the PDF as a buffer
+        const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
             margin: {
@@ -51,20 +47,12 @@ async function convertMdToPdf(mdFilePath, pdfOutputPath) {
         });
 
         await browser.close();
-
-        console.log(`✅ Successfully converted ${mdFilePath} to ${pdfOutputPath}`);
+        return pdfBuffer;
 
     } catch (error) {
-        console.error('❌ An error occurred:', error);
+        console.error('❌ An error occurred during PDF conversion:', error);
+        throw error; // Re-throw to be handled by the caller
     }
 }
 
-// Example usage:
-const mdFile = 'example.md'; // Name of your markdown file
-const pdfFile = 'output.pdf';  // Desired output PDF file name
-
-// Get the absolute path to your files
-const mdFilePath = path.join(__dirname, mdFile);
-const pdfOutputPath = path.join(__dirname, pdfFile);
-
-convertMdToPdf(mdFilePath, pdfOutputPath);
+module.exports = { convertMdToPdf };
