@@ -4,6 +4,10 @@
 
 This project provides a simple web application to convert Markdown files into PDF documents. Users can drag and drop Markdown files onto the web interface, and the application will process them on the server-side, generating and downloading a PDF version.
 
+## Screenshot
+
+![UI Screenshot](ui.png)
+
 ## Features
 
 *   **Drag-and-Drop Interface**: Easily upload Markdown files by dragging them into the designated area (or click to browse your files).
